@@ -1,6 +1,6 @@
 import './App.css'
+import { useEffect, useState } from 'react'
 
-// Sample performer images (use public URLs or local assets)
 const performerImages = {
   alice: '/assets/alice.jpg',
   bob: '/assets/bob.jpg',
@@ -11,26 +11,41 @@ const performerImages = {
 };
 
 function App() {
-  // Test data for live event schedule with performers and coordinators
-  const events = [
-    { time: '10:00 AM', title: 'Opening Ceremony', duration: '30 min', coordinator: 'John Smith', performers: [{ name: 'Alice', img: performerImages.alice }] },
-    { time: '11:00 AM', title: 'Keynote: The Future of Tech', duration: '45 min', coordinator: 'Jane Doe', performers: [{ name: 'Bob', img: performerImages.bob }] },
-    { time: '12:30 PM', title: 'Networking Lunch', duration: '60 min', coordinator: 'Mike Lee', performers: [{ name: 'Carol', img: performerImages.carol }] },
-    { time: '2:00 PM', title: 'Workshop: AI in Practice', duration: '90 min', coordinator: 'Sara Kim', performers: [{ name: 'Dave', img: performerImages.dave }, { name: 'Eve', img: performerImages.eve }] },
-    { time: '4:00 PM', title: 'Panel Discussion', duration: '60 min', coordinator: 'Tom Brown', performers: [{ name: 'Frank', img: performerImages.frank }] },
-    { time: '5:30 PM', title: 'Closing Remarks', duration: '30 min', coordinator: 'Anna White', performers: [{ name: 'Alice', img: performerImages.alice }, { name: 'Bob', img: performerImages.bob }] },
-  ];
+  const [events, setEvents] = useState([]);
+  const [activeIdx, setActiveIdx] = useState(0);
 
-  // Split events for layout
-  const active = events[0];
-  const nextPerformances = events.slice(1);
+  useEffect(() => {
+    fetch('http://127.0.0.1:5000/api/performances')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setEvents(data);
+        } else {
+          setEvents([]);
+        }
+      })
+      .catch(() => setEvents([]));
+  }, []);
+
+  useEffect(() => {
+    if (!events.length) return;
+    let idx = 0;
+    setActiveIdx(idx);
+  }, [events]);
+
+  if (!events.length) {
+    return <div className="app-layout"><div className="header"><div className="header-title">Ganapati Cultural Day</div><div className="header-details"><div className="header-location">Marigold Way</div></div></div><div style={{textAlign:'center',marginTop:'40px'}}>Loading...</div></div>;
+  }
+
+  // Fallback to first event if index is out of bounds
+  const active = events[activeIdx] || events[0];
+  const nextPerformances = events.slice((activeIdx || 0) + 1);
 
   return (
     <div className="app-layout">
       <div className="header">
         <div className="header-title">Ganapati Cultural Day</div>
         <div className="header-details">
-          <div className="header-time">5PM onwards</div>
           <div className="header-location">Marigold Way</div>
         </div>
       </div>
@@ -38,13 +53,12 @@ function App() {
         <div className="left-section">
           <div className="active-performance">
             <div className="performance-title">{active.title}</div>
-            <div className="performance-time">{active.time}</div>
             <div className="performance-duration">Duration: {active.duration}</div>
             <div className="performance-coordinator">Coordinator: {active.coordinator}</div>
             <div className="performance-performers">
               {active.performers.map((perf, idx) => (
                 <div className="performance-performer" key={idx}>
-                  <img src={perf.img} alt={perf.name} />
+                  <img src={performerImages[perf.name.toLowerCase()] || perf.img} alt={perf.name} />
                   <div className="performance-performer-name">{perf.name}</div>
                 </div>
               ))}
@@ -55,7 +69,6 @@ function App() {
           {nextPerformances.map((event, idx) => (
             <div className="remaining-performance" key={idx}>
               <div className="performance-title">{event.title}</div>
-              <div className="performance-time">{event.time}</div>
               <div className="performance-duration">Duration: {event.duration}</div>
               <div className="performance-coordinator">Coordinator: {event.coordinator}</div>
               <div className="performance-performers">
